@@ -96,14 +96,14 @@ plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
 
 2) Estimate a linear trend model for the proportion of measured days below freezing and report the parametric (t-test) linear trend test results in a sentence. Also discuss scope of inference for this test in a sentence or two (random sampling and random assignment and their implications).
 
-```{r p2, echo=F}
+```{r p2, echo=F, warning=FALSE, message=FALSE}
 prop_lm <- lm(PropDays ~ Year, data = Data1)
 pander_lm(prop_lm)
 
 autoplot(prop_lm, data = Data1, label.size = 3, which = 1:4, ncol = 2)
 ```
 
-In the model fit, the estimated proportion of measured days below zero decreases between 0.0005 to 0.0001 for every one year increase. There is very strong evidence for a linear relationship between year and proportion of measured days below freezing (t-stat = -3.173 \sim t_{108}, p-value = 0.00197). The validity of this test relies on the diagnostics, which we see pictured below. The assumption of constant variance appears severely violated, as the residuals verses fitted values has a sinusoidal trend. The Normal Q-Q plot does not show evidence of a violation of the Normality of the errors assumption. 
+In the model fit, the estimated proportion of measured days below zero decreases between 0.0005 to 0.0001 for every one year increase. There is very strong evidence for a linear relationship between year and proportion of measured days below freezing (t-stat = -3.173 $\sim t_{108},$ p-value = 0.00197). The validity of this test relies on the diagnostics, which we see pictured below. The assumption of constant variance appears severely violated, as the residuals verses fitted values has a sinusoidal trend. The Normal Q-Q plot does not show evidence of a violation of the Normality of the errors assumption. 
 
 
 With these data, the days, months and years were not randomly selected. These data comprise of all sampled days from 1900 to 2008, and therefore our scope of inference only applies to the years (and days, and months) sampled. The temperatures were not randomly assigned to the years (or months or days), hence we can only infer that later years are associated with lower proportions of sampled days below freezing, for these data.  
@@ -115,21 +115,20 @@ With these data, the days, months and years were not randomly selected. These da
 
 4) Generate a permutation test for the trend with the proportion response. I performed one in the syllabus (page 6) using the `shuffle` function from the `mosaic` package. Report a plot of the permutation distribution, the _test statistic_ you used, and a p-value. Generally randomization based tests are more robust to violations of the normality assumption as long as the distribution (shape and variability) is the same for all observations except for differences in the _center_ or mean. Why would that be advantageous with this response?
 
-```{r p4, echo=F}
+```{r p4, echo=F, warning=FALSE, message=FALSE}
 library(mosaic)
 B <- 1000
 Tstar <- matrix(NA, nrow = B)
+Tobs <- prop_lm$coefficients[2]
 for(i in 1:B){
   Tstar[i] <- lm(PropDays ~ shuffle(Year), data = Data1)$coef[2]
 }
 
-par(mfrow = c(1, 2))
+
 qplot(Tstar, geom="histogram",  
       main = "Histogram of Permuted t-stats", 
       xlab = "Freq", fill = I("blue"), col = I("black"), 
-      alpha=I(.2))
-
-hist(Tstar, breaks = 40)
+      alpha=I(.2)) + geom_vline(xintercept = Tobs, colour = "red")
 ```
 
 
