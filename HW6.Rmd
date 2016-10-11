@@ -2,12 +2,82 @@
 title: "HW 6"
 author: "Brandon Fenton and Allison Theobold"
 date: "October 18, 2016"
-output: pdf_document
+output:
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+
 header-includes: \usepackage{float} \usepackage{bm} \usepackage{amsmath} \usepackage{amssymb} \usepackage{microtype}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+library(grid)
+library(gridExtra)
+library(pander)
+library(dplyr)
+library(ggplot2)
+library(effects)
+library(ggfortify)
+
+panderOptions('missing', "-")
+
+pander_lm <-function (fit, ...)
+{
+  fit.sum <- summary(fit)
+  fit.coef <- fit.sum$coefficients
+  fit.ttable <- matrix(nrow=length(fit.sum$aliased), ncol=4)
+  colnames(fit.ttable) <- colnames(fit.sum$coefficients)
+  rownames(fit.ttable) <- names(fit.sum$aliased)
+
+  notna <- as.vector(which(!fit.sum$aliased))
+  fit.ttable[notna,] <- fit.coef
+  fit.ttable <- as.data.frame(fit.ttable)
+  fit.ttable$`Pr(>|t|)` <- ifelse(fit.ttable$`Pr(>|t|)` < 0.0001, "<0.0001",
+                                     sprintf("%.4f", fit.ttable$`Pr(>|t|)`))
+  
+
+  pander(fit.ttable, ...)
+}
+
+pander_anova <-function (fit, ...)
+{
+  fit.anova <- anova(fit)
+  fit.anova$`Pr(>F)` <- ifelse(fit.anova$`Pr(>F)` < 0.0001, "<0.0001",
+                                  sprintf("%.4f", fit.anova$`Pr(>F)`))
+
+pander(fit.anova, ...)
+}
+
+diagPlot <-function(model){
+    p1 <- {ggplot(model, aes(.fitted, .resid)) + geom_point() + 
+      stat_smooth(method="loess") + geom_hline(yintercept=0, col="red", linetype="dashed") + xlab("Fitted Values") + ylab("Residuals") + 
+      ggtitle("Residual vs Fitted Plot") + theme_bw()}
+    
+    p2 <- {ggplot(model, aes(qqnorm(.stdresid)[[1]], .stdresid)) +
+      geom_point(na.rm = TRUE) + geom_abline() +
+      xlab("Theoretical Quantiles") + ylab("Standardized Residuals") +
+      ggtitle("Normal Q-Q") + theme_bw()} 
+
+    p3 <- {ggplot(model, aes(.fitted, sqrt(abs(.stdresid)))) +
+      geom_point(na.rm=TRUE) + stat_smooth(method="loess", na.rm = TRUE) + 
+      xlab("Fitted Value") + ylab(expression(sqrt("|Standardized Residuals|"))) + ggtitle("Scale-Location") + theme_bw()}
+    
+    p4 <- {ggplot(model, aes(seq_along(.cooksd), .cooksd)) +
+      geom_bar(stat="identity", position="identity") + 
+      xlab("Observation Number") + ylab("Cook's Distance") +
+      ggtitle("Cook's Distance") + theme_bw()}
+    
+    return(list(p1, p3, p4))
+}
 ```
 
 We will explore one series like those you found in the Vincent and Meki's paper, but for Bozeman.
@@ -33,13 +103,14 @@ countfun<-function(x) c(sum(x<32),sum(!is.na(x)))
 
 1) Make nice looking and labeled time series plots of the number of days below freezing and the proportion of measured days below freezing.
 
-```{r p1, echo=F}
+```{r p1, echo=F, fig.width = 10, fig.height = 8}
+par(mfrow = c(2, 1))
+
 plot(DaysBelow32 ~ Year, data = Data1, type="l", col = "red", lwd = 2,
      ylab = "Days Below 32 degrees")
 
 plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
      ylab = "Proportion of Measured Days \nBelow 32 degrees")
-
 
 ```
 
@@ -47,7 +118,8 @@ plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
 2) Estimate a linear trend model for the proportion of measured days below freezing and report the parametric (t-test) linear trend test results in a sentence. Also discuss scope of inference for this test in a sentence or two (random sampling and random assignment and their implications).
 
 ```{r p2, echo=F}
-
+prop_lm <- lm(PropDays ~ Year, data = Data1)
+pander_lm(prop_lm)
 ```
 
 
