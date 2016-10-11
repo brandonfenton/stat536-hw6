@@ -106,9 +106,12 @@ autoplot(prop_lm, data = Data1, label.size = 3, which = 1:4, ncol = 2)
 In the model fit, the estimated proportion of measured days below zero decreases between 0.0005 to 0.0001 for every one year increase. There is very strong evidence for a linear relationship between year and proportion of measured days below freezing (t-stat = -3.173 \sim t_{108}, p-value = 0.00197). The validity of this test relies on the diagnostics, which we see pictured below. The assumption of constant variance appears severely violated, as the residuals verses fitted values has a sinusoidal trend. The Normal Q-Q plot does not show evidence of a violation of the Normality of the errors assumption. 
 
 
-
+With these data, the days, months and years were not randomly selected. These data comprise of all sampled days from 1900 to 2008, and therefore our scope of inference only applies to the years (and days, and months) sampled. The temperatures were not randomly assigned to the years (or months or days), hence we can only infer that later years are associated with lower proportions of sampled days below freezing, for these data.  
 
 3) Discuss this proportion response versus using the count of days below zero per year, specific to this example and in general. What issues does using one or the other present? 
+
+- Should use binomial regression or Poisson
+- Linear regression can lead to predicted proportions greater than 1
 
 4) Generate a permutation test for the trend with the proportion response. I performed one in the syllabus (page 6) using the `shuffle` function from the `mosaic` package. Report a plot of the permutation distribution, the _test statistic_ you used, and a p-value. Generally randomization based tests are more robust to violations of the normality assumption as long as the distribution (shape and variability) is the same for all observations except for differences in the _center_ or mean. Why would that be advantageous with this response?
 
