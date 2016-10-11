@@ -100,6 +100,7 @@ plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
 prop_lm <- lm(PropDays ~ Year, data = Data1)
 pander_lm(prop_lm)
 
+
 autoplot(prop_lm, data = Data1, label.size = 3, which = 1:4, ncol = 2)
 
 ```
@@ -117,6 +118,7 @@ With these data, the days, months and years were not randomly selected. These da
 4) Generate a permutation test for the trend with the proportion response. I performed one in the syllabus (page 6) using the `shuffle` function from the `mosaic` package. Report a plot of the permutation distribution, the _test statistic_ you used, and a p-value. Generally randomization based tests are more robust to violations of the normality assumption as long as the distribution (shape and variability) is the same for all observations except for differences in the _center_ or mean. Why would that be advantageous with this response?
 
 ```{r p4, echo=F, warning=FALSE, message=FALSE}
+par(mfrow = c(2, 1))
 library(mosaic)
 library(beanplot)
 B <- 1000
@@ -144,12 +146,14 @@ Above is a plot of 1000 permuted slopes of $\beta_{year},$ with the observed slo
 
 5) The Sen estimator or, more commonly, Theil-Sen is based on a single median of all the possible pairwise generated slopes. Its standard version is available in the `mblm` (median based linear models) R package developed by Lukasz Komsta. The package description provides more details (https://cran.r-project.org/web/packages/mblm/mblm.pdf). Note that with `mblm`, you need to use `repeated=FALSE` to get the Theil-Sen estimator and not the better estimator developed by Siegel. The package has a `summary` function that provides a test based on the nonparametric Wilcox test but it had terrible Type I error rates when I explored it. Without further explorations, I would recommend avoiding its use. Fortunately, our permutation approach can be used to develop a test based on the Theil-Sen slope coefficient. First, compare the estimated slope provided by `mblm` to what you found from the linear model and its permutation test. Then develop a permutation test based on the slope coefficient from `mblm` - note that `mblm` conveniently has the same output structure as `lm`. The confidence interval that runs on `mblm` seems to perform well enough to study, so we can make 95% confidence intervals and check whether 0 is in the interval or not as the following code suggests to use it to perform our 5% significance level hypothesis test.
 
+In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117,$ while with `mblm` we obtained an estimate slope of $\beta_{year} = -0.0003161,$ a difference of $4.3776x10^{-6}.$ A 95% confidence interval for $\beta_{year}$ using `mblm` is (-0.0003698, -0.0002405), which does not contain 0. Therefore, similar to the permutation test results, we conclude that $\beta_{year} \neq 0.$   
+
 
 ```{r,warning=F,message=F}
 require(mblm)
 model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
-summary(model1s)
-confint(model1s)
+#summary(model1s)
+#confint(model1s)
 
 ```
 
@@ -162,6 +166,16 @@ confint(model1s)
   - This will be computationally intensive. To avoid needing to re-run results in R-markdown, you can try the `cache=T` option for any of the permutation or simulation code chunks. Or for this section, you can just report the three error rates and comment out the code you used.
 
 ```{r p6, echo=F}
+sigma.est <- summary(prop_lm)$sigma
+sim_data <- replicate(250, replicate(109, rnorm(1, 0, sigma.est)))
+
+
+for(i in 1:250){
+  
+  sim_data <- sim_slope[i]*Data1$
+
+
+}
 
 ```
 
