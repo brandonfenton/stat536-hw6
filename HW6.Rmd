@@ -116,7 +116,20 @@ With these data, the days, months and years were not randomly selected. These da
 4) Generate a permutation test for the trend with the proportion response. I performed one in the syllabus (page 6) using the `shuffle` function from the `mosaic` package. Report a plot of the permutation distribution, the _test statistic_ you used, and a p-value. Generally randomization based tests are more robust to violations of the normality assumption as long as the distribution (shape and variability) is the same for all observations except for differences in the _center_ or mean. Why would that be advantageous with this response?
 
 ```{r p4, echo=F}
+library(mosaic)
+B <- 1000
+Tstar <- matrix(NA, nrow = B)
+for(i in 1:B){
+  Tstar[i] <- lm(PropDays ~ shuffle(Year), data = Data1)$coef[2]
+}
 
+par(mfrow = c(1, 2))
+qplot(Tstar, geom="histogram",  
+      main = "Histogram of Permuted t-stats", 
+      xlab = "Freq", fill = I("blue"), col = I("black"), 
+      alpha=I(.2))
+
+hist(Tstar, breaks = 40)
 ```
 
 
