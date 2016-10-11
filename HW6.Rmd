@@ -13,25 +13,39 @@ knitr::opts_chunk$set(echo = TRUE)
 We will explore one series like those you found in the Vincent and Meki's paper, but for Bozeman.
 
 The following code will count the days in Bozeman where the minimum temperature was measured to be below 32 degrees F (0 degrees C) and the number of days where information was available in `Data1`.
+
 ```{r,warning=F,message=F}
 Bozeman<-read.csv("Bozeman.csv",header=T)
 
 monthsF<-sort(unique(Bozeman$MonthRE))
 countfun<-function(x) c(sum(x<32),sum(!is.na(x)))
 
-  monthcountMINF<-aggregate(Bozeman$TMIN..F.,by=list(Bozeman$MonthRE),FUN=countfun)
-  yearcountMINF<-aggregate(Bozeman$TMIN..F.,by=list(Bozeman$Year),FUN=countfun)
+  monthcountMINF<-aggregate(Bozeman$TMIN..F., 
+                            by=list(Bozeman$MonthRE),FUN=countfun)
   
-  Data1<-data.frame(Year=yearcountMINF[,1],DaysBelow32=yearcountMINF$x[,1],MeasuredDays=yearcountMINF$x[,2],PropDays=yearcountMINF$x[,1]/yearcountMINF$x[,2])
+  yearcountMINF<-aggregate(Bozeman$TMIN..F.,
+                           by=list(Bozeman$Year),FUN=countfun)
+  
+  Data1 <- data.frame(Year=yearcountMINF[,1], DaysBelow32=yearcountMINF$x[,1],
+                      MeasuredDays=yearcountMINF$x[,2],
+                      PropDays=yearcountMINF$x[,1]/yearcountMINF$x[,2])
 ```  
 
-1) Make nice looking and labeled time series plots of the number of days below freezing and the proportion of measured days below freezing. 
+1) Make nice looking and labeled time series plots of the number of days below freezing and the proportion of measured days below freezing.
+
 ```{r p1, echo=F}
+plot(DaysBelow32 ~ Year, data = Data1, type="l", col = "red", lwd = 2,
+     ylab = "Days Below 32 degrees")
+
+plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
+     ylab = "Proportion of Measured Days \nBelow 32 degrees")
+
 
 ```
 
 
 2) Estimate a linear trend model for the proportion of measured days below freezing and report the parametric (t-test) linear trend test results in a sentence. Also discuss scope of inference for this test in a sentence or two (random sampling and random assignment and their implications).
+
 ```{r p2, echo=F}
 
 ```
@@ -54,8 +68,6 @@ require(mblm)
 model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
 summary(model1s)
 confint(model1s)
-CI<-confint(model1s)[2,] #Extract CI and check whether 0 is in interval
-(0>CI[1])&(0<CI[2]) #If 0 is in interval, FTR H0
 
 ```
 
@@ -77,11 +89,13 @@ CI<-confint(model1s)[2,] #Extract CI and check whether 0 is in interval
     
   - To simulate the process we can use this value in the `arima.sim` function in something like `arima.sim(n=2000,list(ar=c(0.3)),sd=5)` where `n=2000` provides 2000 simulated observations, `model=list(ar=c(0.3))` determines that we are using an AR(1) process with parameter of of 0.3, and `sd=5` controls the SD of the normal white noise used to build the AR(1) process (this is _not_ the variance of the AR(1) process). Check that you get about your expected results using something like:
 ```{r p7, warning=F,message=F}
-ar1sim<-arima.sim(n=2000,model=list(ar=c(0.6)),sd=5)
+
+ar1sim <- arima.sim(n = 2000,model = list(ar = c(0.6)), sd=5)
 var(ar1sim)
 ```
 
 8) Repeat your simulation study of the parametric, permutation, and Theil-Sen linear trend test based on the CI. Report the estimated Type I error rates in the presence of AR(1) correlations with a parameter of 0.6 based on your work in the previous question for simulating the response time series. Discuss the impacts of having autocorrelation present on the various procedures.
+
 ```{r p8, echo=F}
 
 ```
