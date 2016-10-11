@@ -57,27 +57,6 @@ pander_anova <-function (fit, ...)
 pander(fit.anova, ...)
 }
 
-diagPlot <-function(model){
-    p1 <- {ggplot(model, aes(.fitted, .resid)) + geom_point() + 
-      stat_smooth(method="loess") + geom_hline(yintercept=0, col="red", linetype="dashed") + xlab("Fitted Values") + ylab("Residuals") + 
-      ggtitle("Residual vs Fitted Plot") + theme_bw()}
-    
-    p2 <- {ggplot(model, aes(qqnorm(.stdresid)[[1]], .stdresid)) +
-      geom_point(na.rm = TRUE) + geom_abline() +
-      xlab("Theoretical Quantiles") + ylab("Standardized Residuals") +
-      ggtitle("Normal Q-Q") + theme_bw()} 
-
-    p3 <- {ggplot(model, aes(.fitted, sqrt(abs(.stdresid)))) +
-      geom_point(na.rm=TRUE) + stat_smooth(method="loess", na.rm = TRUE) + 
-      xlab("Fitted Value") + ylab(expression(sqrt("|Standardized Residuals|"))) + ggtitle("Scale-Location") + theme_bw()}
-    
-    p4 <- {ggplot(model, aes(seq_along(.cooksd), .cooksd)) +
-      geom_bar(stat="identity", position="identity") + 
-      xlab("Observation Number") + ylab("Cook's Distance") +
-      ggtitle("Cook's Distance") + theme_bw()}
-    
-    return(list(p1, p3, p4))
-}
 ```
 
 We will explore one series like those you found in the Vincent and Meki's paper, but for Bozeman.
@@ -120,7 +99,13 @@ plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
 ```{r p2, echo=F}
 prop_lm <- lm(PropDays ~ Year, data = Data1)
 pander_lm(prop_lm)
+
+autoplot(prop_lm, data = Data1, label.size = 3, which = 1:4, ncol = 2)
 ```
+
+In the model fit, the estimated proportion of measured days below zero decreases between 0.0005 to 0.0001 for every one year increase. There is very strong evidence for a linear relationship between year and proportion of measured days below freezing (t-stat = -3.173 \sim t_{108}, p-value = 0.00197). The validity of this test relies on the diagnostics, which we see pictured below. The assumption of constant variance appears severely violated, as the residuals verses fitted values has a sinusoidal trend. The Normal Q-Q plot does not show evidence of a violation of the Normality of the errors assumption. 
+
+
 
 
 3) Discuss this proportion response versus using the count of days below zero per year, specific to this example and in general. What issues does using one or the other present? 
