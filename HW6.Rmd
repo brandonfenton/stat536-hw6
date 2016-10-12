@@ -150,7 +150,7 @@ In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117
 
 
 ```{r,warning=F,message=F}
-require(mblm)
+library(mblm)
 model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
 #summary(model1s)
 #confint(model1s)
@@ -165,7 +165,7 @@ model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
   
   - This will be computationally intensive. To avoid needing to re-run results in R-markdown, you can try the `cache=T` option for any of the permutation or simulation code chunks. Or for this section, you can just report the three error rates and comment out the code you used.
 
-```{r p6, echo=F}
+```{r p6, echo = F, cache = TRUE}
 sigma.est <- summary(prop_lm)$sigma
 sim_data <- matrix(replicate(250, replicate(109, rnorm(1, 0, sigma.est))),
                    nrow = 109, ncol = 250)
@@ -203,33 +203,63 @@ permute_type_1 <- apply(sim_data, 2, permute_function)
 #sum(permute_type_1) = Type 1 error rate  
 ```
 
-7) Instead of white noise errors, we might also be interested in Type I error rates when we have autocorrelation present (again with no trend in the true process). Use the results for an AR(1) process variance (derived in class) to calculate the white noise variance needed to generate a process with the same variance as you used for your previous simulation, but when $\phi$=0.3 and 0.6. In other words, $\gamma_0$ of the AR(1) process needs to match the white noise variance used above and the white noise process driving the AR(1) process needs to be adjusted appropriately. 
+7) Instead of white noise errors, we might also be interested in Type I error rates when we have autocorrelation present (again with no trend in the true process). Use the results for an AR(1) process variance (derived in class) to calculate the white noise variance needed to generate a process with the same variance as you used for your previous simulation, but when $\phi =0.3$ and 0.6. In other words, $\gamma_0$ of the AR(1) process needs to match the white noise variance used above and the white noise process driving the AR(1) process needs to be adjusted appropriately. 
 
-  - Show your derivation of the required white noise variances first for $\phi=0.3$ and $\phi=0.6$. 
+  - Show your derivation of the required white noise variances first for $\phi=0.3$ and $\phi=0.6$.   
+  
+  
+  
     
   - To simulate the process we can use this value in the `arima.sim` function in something like `arima.sim(n=2000,list(ar=c(0.3)),sd=5)` where `n=2000` provides 2000 simulated observations, `model=list(ar=c(0.3))` determines that we are using an AR(1) process with parameter of of 0.3, and `sd=5` controls the SD of the normal white noise used to build the AR(1) process (this is _not_ the variance of the AR(1) process). Check that you get about your expected results using something like:
 ```{r p7, warning=F,message=F}
 
-ar1sim <- arima.sim(n = 2000,model = list(ar = c(0.6)), sd=5)
+ar1sim <- arima.sim(n = 2000, model = list(ar = c(0.6)), sd = 5)
 var(ar1sim)
 ```
 
 8) Repeat your simulation study of the parametric, permutation, and Theil-Sen linear trend test based on the CI. Report the estimated Type I error rates in the presence of AR(1) correlations with a parameter of 0.6 based on your work in the previous question for simulating the response time series. Discuss the impacts of having autocorrelation present on the various procedures.
 
-```{r p8, echo=F}
+```{r p8, echo=F, cache=TRUE}
 
+ar_sim_data <- matrix(replicate(250, arima.sim(n = 109, 
+                                            model = list( ar = c(0.6)), 
+                                            sd = sigma.est)),
+                             nrow = 109, ncol = 250)
+
+
+t_ar_type_1 <- apply(ar_sim_data, 2, t_function)
+#sum(t_ar_type_1) = 74/250 = 0.296 Type 1 error rate
+
+permute_ar_type_1 <- apply(ar_sim_data, 2, permute_function)
+#sum(permute_ar_type_1) = Type 1 error rate  
 ```
 
 9) The Zhang method you read about is also available in the `zyp` package but it only provides confidence intervals and I am not completely convinced by their discussion of the intervals provided without more exploration. But you can get estimates from `zyp.sen` and confidence intervals using `confint.zyp` on the results from `zyp.sen`. The `confint` function can also be applied to `mblm` results. Find and compare the two confidence intervals for the Sen-estimators for the proportion response time series. No simulation study here - just complete the analysis.  
 
 ```{r p9, echo=F}
+library(mblm, zyp)
+model_zyp <- zyp.sen(PropDays ~ Year,data = Data1)
+zyp <- confint.zyp(model_zyp)
+mblm <- confint(model1s)
 
+CIs <- cbind(zyp[2,], mblm[2,])
+row.names(CIs) <- c("zyp", "mblm")
+colnames(CIs) <- c("0.025", "0.975")
+
+pander(CIs)
 ```
 
 10) Make a plot of the original proportion response time series with the parametric linear, Theil-Sen, and Zhang methods/models on the same plot. You may want to use `plot(y~x,type="l")` and then add lines to the plot.
 
 ```{r p10, echo=F}
-
+plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
+     ylab = "Proportion of Measured Days \nBelow 32 degrees")
+lines(prop_lm$coef[1] + prop_lm$coef[2]*Year, data = Data1, lwd = 2, 
+      col = "red")
+lines(model1s$coef[1] + model1s$coef[2]*Year, data = Data1, lwd = 2, 
+      col = "green")
+lines(model_zyp$coef[1] + model_zyp$coef[2]*Year, data = Data1, lwd = 2, 
+      col = "black")
 ```
 
 ## R code appendix
