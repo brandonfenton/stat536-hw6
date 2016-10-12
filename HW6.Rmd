@@ -167,16 +167,40 @@ model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
 
 ```{r p6, echo=F}
 sigma.est <- summary(prop_lm)$sigma
-sim_data <- replicate(250, replicate(109, rnorm(1, 0, sigma.est)))
+sim_data <- matrix(replicate(250, replicate(109, rnorm(1, 0, sigma.est))),
+                   nrow = 109, ncol = 250)
 
 
-for(i in 1:250){
-  
-  sim_data <- sim_slope[i]*Data1$
-
-
+t_function <- function(x){
+  p_value <- summary(lm(x ~ Data1$Year))$coef[2, 4]
+  decision <- ifelse(p_value < 0.05, 1, 0)
+  return(decision)
 }
 
+t_type_1 <- apply(sim_data, 2, t_function)
+#sum(t_type_1) = 6/250 = 0.024 Type 1 errors
+
+mblm_function <- function(x){
+  model <- mblm(x ~ Data1$Year, repeated = F)
+  CI <- confint(model)
+  decision <- ifelse(CI[1] < 0 & CI[2] > 0, "0", "1")
+  return(decision)
+} 
+
+permute_function <- function(x){
+  B <- 5000
+  Tstar <- matrix(NA, nrow = B)
+  Tobs <- prop_lm$coefficients[2]
+    for(i in 1:B){
+        Tstar[i] <- lm(x ~ shuffle(Data1$Year))$coef[2]
+    } 
+  p_value <- pdata(abs(Tstar), 0, lower.tail = F)
+  decision <- ifelse(p_value < 0.05, "R", "FTR")
+  return(decision)
+}
+
+permute_type_1 <- apply(sim_data, 2, permute_function)
+  
 ```
 
 7) Instead of white noise errors, we might also be interested in Type I error rates when we have autocorrelation present (again with no trend in the true process). Use the results for an AR(1) process variance (derived in class) to calculate the white noise variance needed to generate a process with the same variance as you used for your previous simulation, but when $\phi$=0.3 and 0.6. In other words, $\gamma_0$ of the AR(1) process needs to match the white noise variance used above and the white noise process driving the AR(1) process needs to be adjusted appropriately. 
