@@ -14,6 +14,7 @@ output:
     fig_width: 5
 
 header-includes: \usepackage{float} \usepackage{bm} \usepackage{amsmath} \usepackage{amssymb} \usepackage{microtype}
+
 ---
 
 ```{r setup, include=FALSE}
@@ -106,7 +107,7 @@ autoplot(prop_lm, data = Data1, label.size = 3, which = 1:4, ncol = 2)
 
 ```
 
-In the model fit, the estimated proportion of measured days below zero decreases between 0.0005 to 0.0001 for every one year increase. There is very strong evidence for a linear relationship between year and proportion of measured days below freezing (t-stat = -3.173 $\sim t_{108},$ p-value = 0.00197). The validity of this test relies on the diagnostics, which we see pictured below. The assumption of constant variance appears severely violated, as the residuals verses fitted values has a sinusoidal trend. The Normal Q-Q plot also raises some concern, as there are substantial deviations as early as the first quantile. 
+In the model fit, the estimated proportion of measured days below zero decreases between 0.0005 to 0.0001 (95\% CI) for every one year increase. There is very strong evidence for a linear relationship between year and proportion of measured days below freezing (t-stat = -3.173 $\sim t_{108},$ p-value = 0.00197). The validity of this test relies on the diagnostics, which we see pictured above. The assumption of constant variance is severely violated, as the residuals verses fitted values has a sinusoidal trend. The Normal Q-Q plot also raises some concern, as there are substantial deviations from Normality as early as the first quantile. 
 
 
 With these data, the days, months and years were not randomly selected. These data comprise of all sampled days from 1900 to 2008, and therefore our scope of inference only applies to the years (and days, and months) sampled. The temperatures were not randomly assigned to the years (or months or days), hence we can only infer that later years are associated with lower proportions of sampled days below freezing, for these data.  
@@ -119,7 +120,7 @@ With these data, the days, months and years were not randomly selected. These da
 4) Generate a permutation test for the trend with the proportion response. I performed one in the syllabus (page 6) using the `shuffle` function from the `mosaic` package. Report a plot of the permutation distribution, the _test statistic_ you used, and a p-value. Generally randomization based tests are more robust to violations of the normality assumption as long as the distribution (shape and variability) is the same for all observations except for differences in the _center_ or mean. Why would that be advantageous with this response?
 
 ```{r p4, echo=F, warning=FALSE, message=FALSE}
-# par(mfrow = c(2, 1))
+par(mfrow = c(2, 1))
 library(mosaic)
 library(beanplot)
 B <- 1000
@@ -147,7 +148,7 @@ Above is a plot of 1000 permuted slopes of $\beta_{year},$ with the observed slo
 
 5) The Sen estimator or, more commonly, Theil-Sen is based on a single median of all the possible pairwise generated slopes. Its standard version is available in the `mblm` (median based linear models) R package developed by Lukasz Komsta. The package description provides more details (https://cran.r-project.org/web/packages/mblm/mblm.pdf). Note that with `mblm`, you need to use `repeated=FALSE` to get the Theil-Sen estimator and not the better estimator developed by Siegel. The package has a `summary` function that provides a test based on the nonparametric Wilcox test but it had terrible Type I error rates when I explored it. Without further explorations, I would recommend avoiding its use. Fortunately, our permutation approach can be used to develop a test based on the Theil-Sen slope coefficient. First, compare the estimated slope provided by `mblm` to what you found from the linear model and its permutation test. Then develop a permutation test based on the slope coefficient from `mblm` - note that `mblm` conveniently has the same output structure as `lm`. The confidence interval that runs on `mblm` seems to perform well enough to study, so we can make 95% confidence intervals and check whether 0 is in the interval or not as the following code suggests to use it to perform our 5% significance level hypothesis test.
 
-In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117,$ while with `mblm` we obtained an estimate slope of $\beta_{year} = -0.0003161,$ a difference of $4.3776x10^{-6}.$ A 95% confidence interval for $\beta_{year}$ using `mblm` is (-0.0003698, -0.0002405), which does not contain 0. Therefore, similar to the permutation test results, we conclude that $\beta_{year} \neq 0.$   
+In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117,$ while with `mblm` we obtained an estimate slope of $\beta_{year} = -0.0003161,$ a difference of $4.3776x10^{-6}.$ A 95% confidence interval for $\beta_{year}$ using `mblm` is (-0.0003698, -0.0002405), which does not contain 0. Therefore, similar to the permutation test results, we conclude that $\beta_{year} \neq 0.$ A plot of the permuted `mblm` slopes is displayed below. We see similar results to the permuted `lm` slopes, with a resulting p-value of 0.005.
 
 
 ```{r,warning=F,message=F}
@@ -155,6 +156,23 @@ library(mblm)
 model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
 #summary(model1s)
 #confint(model1s)
+
+B <- 1000
+Tstar <- matrix(NA, nrow = B)
+Tobs <- model1s$coefficients[2]
+for(i in 1:B){
+  z <- data.frame(Year = shuffle(Data1$Year), PropDays = Data1$PropDays)
+  Tstar[i] <- mblm(PropDays ~ Year, data = z)$coef[2]
+}
+
+
+qplot(Tstar, geom="histogram",  
+      main = expression(paste("Histogram of Permuted ", beta[year])), 
+      xlab = "Freq", fill = I("blue"), col = I("black"), 
+      alpha=I(.2)) + geom_vline(xintercept = Tobs, colour = "red")
+
+p_value <- pdata(abs(Tstar), abs(Tobs), lower.tail = F)
+
 
 ```
 
