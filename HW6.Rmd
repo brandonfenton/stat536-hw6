@@ -159,11 +159,6 @@ model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
 
 6) Use the residual error variance estimate from your linear model for the proportion responses to simulate a series with no trend (constant mean and you can leave it at 0) and normal white noise with that same variance. Use that simulation code to perform a simulation study of the Type I error rate for the parametric t-test for the slope coefficient, the test using the confidence interval from `mblm`, and your permutation test (use 500 permutations and do 250 simulations to keep the run time somewhat manageable). Report the simulation-based Type I error rates when using a 5% significance level test for the three procedures with the same sample size as the original data set. 
 
-  - For the parametric test, the p-value can be extracted from the `lm`  model `summary`'s using `summary(model1)$coef[2,4]`.
-  
-  - It is best and easiest if you do one loop for the simulations and then for each simulated data set in each loop generate the three test results, extracting the p-values that each produces. If you struggle to set this up, please send me an email or stop by with an attempt at your code for some feedback.
-  
-  - This will be computationally intensive. To avoid needing to re-run results in R-markdown, you can try the `cache=T` option for any of the permutation or simulation code chunks. Or for this section, you can just report the three error rates and comment out the code you used.
     
     ```{r p6fns, echo = F, cache = TRUE}
 
