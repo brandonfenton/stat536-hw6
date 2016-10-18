@@ -7,7 +7,6 @@ output:
     fig_height: 3
     fig_width: 5
   html_document:
-    fig_height: 3
     fig_width: 5
   word_document:
     fig_height: 3
@@ -16,9 +15,9 @@ output:
 header-includes: \usepackage{float} \usepackage{bm} \usepackage{amsmath} \usepackage{amssymb} \usepackage{microtype}
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+```{r setup, include=FALSE, echo=F}
 knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
 
 library(grid)
 library(gridExtra)
@@ -57,13 +56,15 @@ pander_anova <-function (fit, ...)
 pander(fit.anova, ...)
 }
 
+load("p6.Rdata")
+load("p8.Rdata")
 ```
 
 We will explore one series like those you found in the Vincent and Meki's paper, but for Bozeman.
 
 The following code will count the days in Bozeman where the minimum temperature was measured to be below 32 degrees F (0 degrees C) and the number of days where information was available in `Data1`.
 
-```{r,warning=F,message=F}
+```{r data,warning=F,message=F, echo=F}
 Bozeman<-read.csv("Bozeman.csv",header=T)
 
 monthsF<-sort(unique(Bozeman$MonthRE))
@@ -83,7 +84,7 @@ countfun<-function(x) c(sum(x<32),sum(!is.na(x)))
 
 1) Make nice looking and labeled time series plots of the number of days below freezing and the proportion of measured days below freezing.
 
-```{r p1, echo=F, fig.width = 10, fig.height = 8}
+    ```{r p1, echo=F, fig.width = 10, fig.height = 8}
 par(mfrow = c(2, 1))
 
 plot(DaysBelow32 ~ Year, data = Data1, type="l", col = "red", lwd = 2,
@@ -97,7 +98,7 @@ plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
 
 2) Estimate a linear trend model for the proportion of measured days below freezing and report the parametric (t-test) linear trend test results in a sentence. Also discuss scope of inference for this test in a sentence or two (random sampling and random assignment and their implications).
 
-```{r p2, echo=F, warning=FALSE, message=FALSE}
+    ```{r p2, echo=F, warning=FALSE, message=FALSE}
 prop_lm <- lm(PropDays ~ Year, data = Data1)
 pander_lm(prop_lm)
 
@@ -112,13 +113,11 @@ In the model fit, the estimated proportion of measured days below zero decreases
 With these data, the days, months and years were not randomly selected. These data comprise of all sampled days from 1900 to 2008, and therefore our scope of inference only applies to the years (and days, and months) sampled. The temperatures were not randomly assigned to the years (or months or days), hence we can only infer that later years are associated with lower proportions of sampled days below freezing, for these data.  
 
 3) Discuss this proportion response versus using the count of days below zero per year, specific to this example and in general. What issues does using one or the other present? 
-
-- Should use binomial regression or Poisson
-- Linear regression can lead to predicted proportions greater than 1
+    In either case, the model used should be appropriate for the response.  This would mean using either a binomial regression model for proportion responses or a poisson regression model for count responses.  Time series GLMs can be more difficult to implement -- particularly in the case of poisson models -- but if a normal model is fit then other issues arise.  For example, an OLS model could generate predicted proportions falling outside $[0,1]$, or predicted counts with fractional or negative values. 
 
 4) Generate a permutation test for the trend with the proportion response. I performed one in the syllabus (page 6) using the `shuffle` function from the `mosaic` package. Report a plot of the permutation distribution, the _test statistic_ you used, and a p-value. Generally randomization based tests are more robust to violations of the normality assumption as long as the distribution (shape and variability) is the same for all observations except for differences in the _center_ or mean. Why would that be advantageous with this response?
 
-```{r p4, echo=F, warning=FALSE, message=FALSE}
+    ```{r p4, echo=F, warning=FALSE, message=FALSE}
 # par(mfrow = c(2, 1))
 library(mosaic)
 library(beanplot)
@@ -150,7 +149,7 @@ Above is a plot of 1000 permuted slopes of $\beta_{year},$ with the observed slo
 In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117,$ while with `mblm` we obtained an estimate slope of $\beta_{year} = -0.0003161,$ a difference of $4.3776x10^{-6}.$ A 95% confidence interval for $\beta_{year}$ using `mblm` is (-0.0003698, -0.0002405), which does not contain 0. Therefore, similar to the permutation test results, we conclude that $\beta_{year} \neq 0.$   
 
 
-```{r,warning=F,message=F}
+    ```{r p5,warning=F,message=F, echo=F}
 library(mblm)
 model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
 #summary(model1s)
@@ -165,11 +164,8 @@ model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
   - It is best and easiest if you do one loop for the simulations and then for each simulated data set in each loop generate the three test results, extracting the p-values that each produces. If you struggle to set this up, please send me an email or stop by with an attempt at your code for some feedback.
   
   - This will be computationally intensive. To avoid needing to re-run results in R-markdown, you can try the `cache=T` option for any of the permutation or simulation code chunks. Or for this section, you can just report the three error rates and comment out the code you used.
-
-```{r p6, echo = F, cache = TRUE}
-sigma.est <- summary(prop_lm)$sigma
-sim_data <- replicate(250, replicate(109, rnorm(1, 0, sigma.est)))
-
+    
+    ```{r p6fns, echo = F, cache = TRUE}
 
 t_function <- function(x){
   p_value <- summary(lm(x ~ Data1$Year))$coef[2, 4]
@@ -177,21 +173,13 @@ t_function <- function(x){
   return(decision)
 }
 
-t_type_1 <- apply(sim_data[, -1], 2, t_function)
-
-# sum(t_type_1) = 6/250 = 0.024 Type 1 error rate
-
 mblm_function <- function(x){
   z <- data.frame(Year = Data1$Year, x)
   model <- mblm(x ~ Year, z, repeated = F)
   CI <- confint(model)
   decision <- ifelse(CI[1] <= 0 & CI[2] >= 0, 0, 1)
   return(decision)
-} 
-
-mblm_type_1 <- apply(sim_data[ , 2:14], 2, mblm_function)
-
-# sum(mblm_type_1) = 
+}
 
 permute_function <- function(x){
   B <- 5000
@@ -205,16 +193,41 @@ permute_function <- function(x){
   return(decision)
 }
 
+sigma.est <- summary(prop_lm)$sigma
+
+
+```
+
+    ```{r p6, echo = F, cache = TRUE, eval=F}
+# Results are loaded in the setup chunk
+sim_data <- replicate(250, replicate(109, rnorm(1, 0, sigma.est)))
+
+
+
+
+t_type_1 <- apply(sim_data[, -1], 2, t_function)
+
+# sum(t_type_1) = 6/250 = 0.024 Type 1 error rate
+
+
+
+mblm_type_1 <- apply(sim_data[ , 2:14], 2, mblm_function)
+
+# sum(mblm_type_1) = 
+
+
+
 permute_type_1 <- apply(sim_data, 2, permute_function)
 
 #sum(permute_type_1) = Type 1 error rate  
+save(sim_data, t_type_1, mblm_type_1, permute_type_1, file="p6.Rdata")
 ```
 
 7) Instead of white noise errors, we might also be interested in Type I error rates when we have autocorrelation present (again with no trend in the true process). Use the results for an AR(1) process variance (derived in class) to calculate the white noise variance needed to generate a process with the same variance as you used for your previous simulation, but when $\phi = 0.3$ and 0.6. In other words, $\gamma_0$ of the AR(1) process needs to match the white noise variance used above and the white noise process driving the AR(1) process needs to be adjusted appropriately. 
 
   - Show your derivation of the required white noise variances first for $\phi = 0.3$ and $\phi = 0.6$.   
   
-```{r, echo = T}
+    ```{r p7, echo = T}
 ar1.03.error <- (1 - 0.3^2)*sigma.est
 ar1.06.error <- (1 - 0.6^2)*sigma.est 
 
@@ -225,7 +238,7 @@ ar1.06.error
   
   - To simulate the process we can use this value in the `arima.sim` function in something like `arima.sim(n=2000,list(ar=c(0.3)),sd=5)` where `n=2000` provides 2000 simulated observations, `model=list(ar=c(0.3))` determines that we are using an AR(1) process with parameter of of 0.3, and `sd=5` controls the SD of the normal white noise used to build the AR(1) process (this is _not_ the variance of the AR(1) process). Check that you get about your expected results using something like:
   
-```{r p7, warning=F,message=F}
+    ```{r p7a, warning=F,message=F}
 ar1sim <- arima.sim(n = 2000, model = list(ar = c(0.6)), 
                     sd = sqrt(ar1.06.error))
 var(ar1sim)
@@ -235,8 +248,8 @@ sigma.est
 
 8) Repeat your simulation study of the parametric, permutation, and Theil-Sen linear trend test based on the CI. Report the estimated Type I error rates in the presence of AR(1) correlations with a parameter of 0.6 based on your work in the previous question for simulating the response time series. Discuss the impacts of having autocorrelation present on the various procedures.
 
-```{r p8, echo=F, cache=TRUE}
-
+    ```{r p8, echo=F, cache=TRUE, eval=F}
+# Results are loaded in the setup chunk
 ar_sim_data <- replicate(250, arima.sim(n = 109, model = list( ar = c(0.6)),
                                         sd = sqrt(ar1.06.error)))
 
@@ -249,11 +262,12 @@ mblm_ar_type_1 <- apply(ar_sim_data, 2, mblm_function)
 
 permute_ar_type_1 <- apply(ar_sim_data, 2, permute_function)
 # sum(permute_ar_type_1) = Type 1 error rate  
+save(ar_sim_data, t_ar_type_1, mblm_ar_type_1, permute_ar_type_1, file="p8.Rdata")
 ```
 
 9) The Zhang method you read about is also available in the `zyp` package but it only provides confidence intervals and I am not completely convinced by their discussion of the intervals provided without more exploration. But you can get estimates from `zyp.sen` and confidence intervals using `confint.zyp` on the results from `zyp.sen`. The `confint` function can also be applied to `mblm` results. Find and compare the two confidence intervals for the Sen-estimators for the proportion response time series. No simulation study here - just complete the analysis.  
 
-```{r p9, echo=F}
+    ```{r p9, echo=F, message=F}
 library(mblm)
 library(zyp)
 model_zyp <- zyp.sen(PropDays ~ Year,data = Data1)
@@ -270,7 +284,7 @@ pander(CIs)
 
 10) Make a plot of the original proportion response time series with the parametric linear, Theil-Sen, and Zhang methods/models on the same plot. You may want to use `plot(y~x,type="l")` and then add lines to the plot.
 
-```{r p10, echo=F}
+    ```{r p10, echo=F}
 par(mfrow = c(1, 1))
 plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
      ylab = "Proportion of Measured Days \nBelow 32 degrees")
@@ -289,3 +303,66 @@ legend("topright", legend = c("lm", "mblm", "zyp"),
 ```
 
 ## R code appendix
+
+# Setup
+```{r a0, ref.label="setup", eval=F}
+
+```
+
+```{r a0a, ref.label="data", eval=F}
+
+```
+
+# Problem 1
+```{r a1, ref.label="p1", eval=F}
+
+```
+
+# Problem 2
+```{r a2, ref.label="p2", eval=F}
+
+```
+
+# Problem 4
+```{r a4, ref.label="p4", eval=F}
+
+```
+
+# Problem 5
+```{r a5, ref.label="p5", eval=F}
+
+```
+
+# Problem 6
+
+```{r a6fns, ref.label="p6fns", eval=F}
+
+```
+
+```{r a6, ref.label="p6", eval=F}
+
+```
+
+# Problem 7
+```{r a7, ref.label="p7", eval=F}
+
+```
+
+```{r a7a, ref.label="p7a", eval=F}
+
+```
+
+# Problem 8
+```{r a8, ref.label="p8", eval=F}
+
+```
+
+# Problem 9
+```{r a9, ref.label="p9", eval=F}
+
+```
+
+# Problem 10
+```{r a10, ref.label="p10", eval=F}
+
+```
