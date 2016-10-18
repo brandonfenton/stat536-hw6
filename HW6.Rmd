@@ -75,9 +75,10 @@ countfun<-function(x) c(sum(x<32),sum(!is.na(x)))
   yearcountMINF<-aggregate(Bozeman$TMIN..F.,
                            by=list(Bozeman$Year),FUN=countfun)
   
-  Data1 <- data.frame(Year=yearcountMINF[,1], DaysBelow32=yearcountMINF$x[,1],
-                      MeasuredDays=yearcountMINF$x[,2],
-                      PropDays=yearcountMINF$x[,1]/yearcountMINF$x[,2])
+  Data1 <- data.frame(Year = yearcountMINF[,1],
+                      DaysBelow32 = yearcountMINF$x[,1],
+                      MeasuredDays = yearcountMINF$x[,2],
+                      PropDays = yearcountMINF$x[,1]/yearcountMINF$x[,2])
 ```  
 
 1) Make nice looking and labeled time series plots of the number of days below freezing and the proportion of measured days below freezing.
@@ -118,7 +119,7 @@ With these data, the days, months and years were not randomly selected. These da
 4) Generate a permutation test for the trend with the proportion response. I performed one in the syllabus (page 6) using the `shuffle` function from the `mosaic` package. Report a plot of the permutation distribution, the _test statistic_ you used, and a p-value. Generally randomization based tests are more robust to violations of the normality assumption as long as the distribution (shape and variability) is the same for all observations except for differences in the _center_ or mean. Why would that be advantageous with this response?
 
 ```{r p4, echo=F, warning=FALSE, message=FALSE}
-par(mfrow = c(2, 1))
+# par(mfrow = c(2, 1))
 library(mosaic)
 library(beanplot)
 B <- 1000
@@ -167,8 +168,7 @@ model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
 
 ```{r p6, echo = F, cache = TRUE}
 sigma.est <- summary(prop_lm)$sigma
-sim_data <- matrix(replicate(250, replicate(109, rnorm(1, 0, sigma.est))),
-                   nrow = 109, ncol = 250)
+sim_data <- replicate(250, replicate(109, rnorm(1, 0, sigma.est)))
 
 
 t_function <- function(x){
@@ -177,18 +177,21 @@ t_function <- function(x){
   return(decision)
 }
 
-t_type_1 <- apply(sim_data, 2, t_function)
-#sum(t_type_1) = 6/250 = 0.024 Type 1 error rate
+t_type_1 <- apply(sim_data[, -1], 2, t_function)
+
+# sum(t_type_1) = 6/250 = 0.024 Type 1 error rate
 
 mblm_function <- function(x){
-  z <- as.vector(t(x))
-  model <- mblm(z ~ Data1$Year, repeated = F)
+  z <- data.frame(Year = Data1$Year, x)
+  model <- mblm(x ~ Year, z, repeated = F)
   CI <- confint(model)
-  decision <- ifelse(CI[1] < 0 & CI[2] > 0, 0, 1)
+  decision <- ifelse(CI[1] <= 0 & CI[2] >= 0, 0, 1)
   return(decision)
 } 
 
-mblm_type_1 <- apply(sim_data[,1:4], 2, mblm_function)
+mblm_type_1 <- apply(sim_data[ , 2:14], 2, mblm_function)
+
+# sum(mblm_type_1) = 
 
 permute_function <- function(x){
   B <- 5000
@@ -203,44 +206,56 @@ permute_function <- function(x){
 }
 
 permute_type_1 <- apply(sim_data, 2, permute_function)
+
 #sum(permute_type_1) = Type 1 error rate  
 ```
 
-7) Instead of white noise errors, we might also be interested in Type I error rates when we have autocorrelation present (again with no trend in the true process). Use the results for an AR(1) process variance (derived in class) to calculate the white noise variance needed to generate a process with the same variance as you used for your previous simulation, but when $\phi =0.3$ and 0.6. In other words, $\gamma_0$ of the AR(1) process needs to match the white noise variance used above and the white noise process driving the AR(1) process needs to be adjusted appropriately. 
+7) Instead of white noise errors, we might also be interested in Type I error rates when we have autocorrelation present (again with no trend in the true process). Use the results for an AR(1) process variance (derived in class) to calculate the white noise variance needed to generate a process with the same variance as you used for your previous simulation, but when $\phi = 0.3$ and 0.6. In other words, $\gamma_0$ of the AR(1) process needs to match the white noise variance used above and the white noise process driving the AR(1) process needs to be adjusted appropriately. 
 
-  - Show your derivation of the required white noise variances first for $\phi=0.3$ and $\phi=0.6$.   
+  - Show your derivation of the required white noise variances first for $\phi = 0.3$ and $\phi = 0.6$.   
+  
+```{r, echo = T}
+ar1.03.error <- (1 - 0.3^2)*sigma.est
+ar1.06.error <- (1 - 0.6^2)*sigma.est 
+
+ar1.03.error
+ar1.06.error
+```
   
   
-  
-    
   - To simulate the process we can use this value in the `arima.sim` function in something like `arima.sim(n=2000,list(ar=c(0.3)),sd=5)` where `n=2000` provides 2000 simulated observations, `model=list(ar=c(0.3))` determines that we are using an AR(1) process with parameter of of 0.3, and `sd=5` controls the SD of the normal white noise used to build the AR(1) process (this is _not_ the variance of the AR(1) process). Check that you get about your expected results using something like:
+  
 ```{r p7, warning=F,message=F}
-
-ar1sim <- arima.sim(n = 2000, model = list(ar = c(0.6)), sd = 5)
+ar1sim <- arima.sim(n = 2000, model = list(ar = c(0.6)), 
+                    sd = sqrt(ar1.06.error))
 var(ar1sim)
+sigma.est
+
 ```
 
 8) Repeat your simulation study of the parametric, permutation, and Theil-Sen linear trend test based on the CI. Report the estimated Type I error rates in the presence of AR(1) correlations with a parameter of 0.6 based on your work in the previous question for simulating the response time series. Discuss the impacts of having autocorrelation present on the various procedures.
 
 ```{r p8, echo=F, cache=TRUE}
 
-ar_sim_data <- matrix(replicate(250, arima.sim(n = 109, 
-                                            model = list( ar = c(0.6)), 
-                                            sd = sigma.est)),
-                             nrow = 109, ncol = 250)
+ar_sim_data <- replicate(250, arima.sim(n = 109, model = list( ar = c(0.6)),
+                                        sd = sqrt(ar1.06.error)))
 
 
 t_ar_type_1 <- apply(ar_sim_data, 2, t_function)
 #sum(t_ar_type_1) = 74/250 = 0.296 Type 1 error rate
 
+mblm_ar_type_1 <- apply(ar_sim_data, 2, mblm_function)
+# sum(mblm_ar_type_1) = 
+
 permute_ar_type_1 <- apply(ar_sim_data, 2, permute_function)
-#sum(permute_ar_type_1) = Type 1 error rate  
+# sum(permute_ar_type_1) = Type 1 error rate  
 ```
 
 9) The Zhang method you read about is also available in the `zyp` package but it only provides confidence intervals and I am not completely convinced by their discussion of the intervals provided without more exploration. But you can get estimates from `zyp.sen` and confidence intervals using `confint.zyp` on the results from `zyp.sen`. The `confint` function can also be applied to `mblm` results. Find and compare the two confidence intervals for the Sen-estimators for the proportion response time series. No simulation study here - just complete the analysis.  
 
 ```{r p9, echo=F}
-library(mblm, zyp)
+library(mblm)
+library(zyp)
 model_zyp <- zyp.sen(PropDays ~ Year,data = Data1)
 zyp <- confint.zyp(model_zyp)
 mblm <- confint(model1s)
@@ -252,17 +267,25 @@ colnames(CIs) <- c("0.025", "0.975")
 pander(CIs)
 ```
 
+
 10) Make a plot of the original proportion response time series with the parametric linear, Theil-Sen, and Zhang methods/models on the same plot. You may want to use `plot(y~x,type="l")` and then add lines to the plot.
 
 ```{r p10, echo=F}
+par(mfrow = c(1, 1))
 plot(PropDays ~ Year, data = Data1, type="l", col = "blue", lwd = 2,
      ylab = "Proportion of Measured Days \nBelow 32 degrees")
-lines(prop_lm$coef[1] + prop_lm$coef[2]*Year, data = Data1, lwd = 2, 
-      col = "red")
-lines(model1s$coef[1] + model1s$coef[2]*Year, data = Data1, lwd = 2, 
-      col = "green")
-lines(model_zyp$coef[1] + model_zyp$coef[2]*Year, data = Data1, lwd = 2, 
-      col = "black")
+
+curve(prop_lm$coef[1] + prop_lm$coef[2]*x, type = "l", 
+      col = "red", add = T, lty = 2, lwd = 2)
+
+curve(model1s$coef[1] + model1s$coef[2]*x, type = "l", add = T,
+      col = "green", lty = 3, lwd = 2)
+
+curve(model_zyp$coef[1] + model_zyp$coef[2]*x, type = "l", add = T, lwd = 2, 
+      col = "black", lty = 4)
+
+legend("topright", legend = c("lm", "mblm", "zyp"), 
+       col = c("red", "green", "black"), lwd = c(2, 2, 2), lty = c(2, 3, 4))
 ```
 
 ## R code appendix
