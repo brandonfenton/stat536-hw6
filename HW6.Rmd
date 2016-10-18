@@ -181,11 +181,14 @@ t_type_1 <- apply(sim_data, 2, t_function)
 #sum(t_type_1) = 6/250 = 0.024 Type 1 error rate
 
 mblm_function <- function(x){
-  model <- mblm(x ~ Data1$Year, repeated = F)
+  z <- as.vector(t(x))
+  model <- mblm(z ~ Data1$Year, repeated = F)
   CI <- confint(model)
   decision <- ifelse(CI[1] < 0 & CI[2] > 0, 0, 1)
   return(decision)
 } 
+
+mblm_type_1 <- apply(sim_data[,1:4], 2, mblm_function)
 
 permute_function <- function(x){
   B <- 5000
