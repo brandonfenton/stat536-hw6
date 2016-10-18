@@ -148,7 +148,7 @@ Above is a plot of 1000 permuted slopes of $\beta_{year},$ with the observed slo
 
 5) The Sen estimator or, more commonly, Theil-Sen is based on a single median of all the possible pairwise generated slopes. Its standard version is available in the `mblm` (median based linear models) R package developed by Lukasz Komsta. The package description provides more details (https://cran.r-project.org/web/packages/mblm/mblm.pdf). Note that with `mblm`, you need to use `repeated=FALSE` to get the Theil-Sen estimator and not the better estimator developed by Siegel. The package has a `summary` function that provides a test based on the nonparametric Wilcox test but it had terrible Type I error rates when I explored it. Without further explorations, I would recommend avoiding its use. Fortunately, our permutation approach can be used to develop a test based on the Theil-Sen slope coefficient. First, compare the estimated slope provided by `mblm` to what you found from the linear model and its permutation test. Then develop a permutation test based on the slope coefficient from `mblm` - note that `mblm` conveniently has the same output structure as `lm`. The confidence interval that runs on `mblm` seems to perform well enough to study, so we can make 95% confidence intervals and check whether 0 is in the interval or not as the following code suggests to use it to perform our 5% significance level hypothesis test.
 
-In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117,$ while with `mblm` we obtained an estimate slope of $\beta_{year} = -0.0003161,$ a difference of $4.3776x10^{-6}.$ A 95% confidence interval for $\beta_{year}$ using `mblm` is (-0.0003698, -0.0002405), which does not contain 0. Therefore, similar to the permutation test results, we conclude that $\beta_{year} \neq 0.$ A plot of the permuted `mblm` slopes is displayed below. We see similar results to the permuted `lm` slopes, with a resulting p-value of 0.005.
+In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117,$ while with `mblm` we obtained an estimate slope of $\beta_{year} = -0.0003161,$ a difference of $4.3776x10^{-6}.$ A 95% confidence interval for $\beta_{year}$ using `mblm` is (-0.0003698, -0.0002405), which does not contain 0. Therefore, similar to the permutation test results, we conclude that $\beta_{year} \neq 0,$ and there is strong evidence of a linear relationship between the proportion of sampled days below freezing and the year. A plot of the permuted `mblm` slopes is displayed below. We see similar results to the permuted `lm` slopes, with a resulting p-value of 0.005.
 
 
 ```{r,warning=F,message=F}
@@ -167,12 +167,11 @@ for(i in 1:B){
 
 
 qplot(Tstar, geom="histogram",  
-      main = expression(paste("Histogram of Permuted ", beta[year])), 
+      main = expression(paste("Histogram of Permuted ", beta[year], "\n from mblm")), 
       xlab = "Freq", fill = I("blue"), col = I("black"), 
       alpha=I(.2)) + geom_vline(xintercept = Tobs, colour = "red")
 
 p_value <- pdata(abs(Tstar), abs(Tobs), lower.tail = F)
-
 
 ```
 
