@@ -26,6 +26,7 @@ library(dplyr)
 library(ggplot2)
 library(effects)
 library(ggfortify)
+library(parallel)
 
 panderOptions('missing', "-")
 
@@ -55,6 +56,8 @@ pander_anova <-function (fit, ...)
 
 pander(fit.anova, ...)
 }
+
+clust <- makeCluster(detectCores())
 
 load("p5.Rdata")
 load("p6.Rdata")
@@ -165,7 +168,7 @@ for(i in 1:B){
   Tstar[i] <- mblm(PropDays ~ Year, data = z)$coef[2]
 }
 
-save(Tstar, Tobs, file="p5.Rdata")
+save(model1s, Tstar, Tobs, file="p5.Rdata")
 ```
 
 ```{r p5results, echo=F}
@@ -197,7 +200,7 @@ mblm_function <- function(x){
   z <- data.frame(Year = Data1$Year, x)
   model <- mblm(x ~ Year, z, repeated = F)
   CI <- confint(model)
-  decision <- ifelse(CI[1] <= 0 & CI[2] >= 0, 0, 1)
+  decision <- ifelse(CI[2] <= 0 & CI[4] >= 0, 0, 1)
   return(decision)
 }
 
@@ -209,6 +212,8 @@ permute_function <- function(x){
         Tstar[i] <- lm(x ~ shuffle(Data1$Year))$coef[2]
     } 
   p_value <- pdata(abs(Tstar), abs(Tobs), lower.tail = F)
+  print(p_value)
+
   decision <- ifelse(p_value < 0.05, 1, 0)
   return(c(decision, p_value))
 }
@@ -222,22 +227,22 @@ sigma.est <- summary(prop_lm)$sigma
 # Results are loaded in the setup chunk
 sim_data <- replicate(250, replicate(109, rnorm(1, 0, sigma.est)))
 
+clusterExport(clust, c("Data1", "prop_lm", "shuffle", "pdata","Tstar", "mblm"))
 
 
-
-t_type_1 <- apply(sim_data, 2, t_function)
+t_type_1 <- parApply(clust, sim_data, 2, t_function)
 
 # sum(t_type_1) = 6/250 = 0.024 Type 1 error rate
 
 
 
-mblm_type_1 <- apply(sim_data, 2, mblm_function)
+mblm_type_1 <- parApply(clust, sim_data, 2, mblm_function)
 
 # sum(mblm_type_1) = 
 
 
 
-permute_type_1 <- apply(sim_data, 2, permute_function)
+permute_type_1 <- parApply(clust, sim_data, 2, permute_function)
 
 #sum(permute_type_1) = Type 1 error rate  
 save(sim_data, t_type_1, mblm_type_1, permute_type_1, file="p6.Rdata")
@@ -260,8 +265,8 @@ pander(uncor.tI)
   - Show your derivation of the required white noise variances first for $\phi = 0.3$ and $\phi = 0.6$.   
   
     ```{r p7, echo = T}
-ar1.03.error <- (1 - 0.3^2)*sigma.est
-ar1.06.error <- (1 - 0.6^2)*sigma.est 
+ar1.03.error <- (1 - 0.3^2)*sigma.est^2
+ar1.06.error <- (1 - 0.6^2)*sigma.est^2
 
 ar1.03.error
 ar1.06.error
@@ -288,17 +293,19 @@ ar_sim_data <- replicate(250, arima.sim(n = 109, model = list( ar = c(0.6)),
                                         sd = sqrt(ar1.06.error)))
 
 
-t_ar_type_1 <- apply(ar_sim_data, 2, t_function)
+t_ar_type_1 <- parApply(clust, ar_sim_data, 2, t_function)
 #sum(t_ar_type_1) = 7/250 = 0.308 Type 1 error rate
 
-mblm_ar_type_1 <- apply(ar_sim_data, 2, mblm_function)
+mblm_ar_type_1 <- parApply(clust, ar_sim_data, 2, mblm_function)
 # sum(mblm_ar_type_1) = 145/250 = 0.58
 
-permute_ar_type_1 <- apply(ar_sim_data, 2, permute_function)
+permute_ar_type_1 <- parApply(clust, ar_sim_data, 2, permute_function)
 # sum(permute_ar_type_1) = Type 1 error rate  
 
 save(ar_sim_data, t_ar_type_1, mblm_ar_type_1, permute_ar_type_1, file="p8.Rdata")
 
+```
+```{r p8a, echo=F}
 ar1.errors <- c(sum(t_ar_type_1)/250, sum(mblm_ar_type_1)/250,
                 sum(permute_ar_type_1)/250)
 
