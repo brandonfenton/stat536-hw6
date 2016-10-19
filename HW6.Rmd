@@ -56,6 +56,7 @@ pander_anova <-function (fit, ...)
 pander(fit.anova, ...)
 }
 
+load("p5.Rdata")
 load("p6.Rdata")
 load("p8.Rdata")
 ```
@@ -149,7 +150,8 @@ Above is a plot of 1000 permuted slopes of $\beta_{year},$ with the observed slo
 In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117,$ while with `mblm` we obtained an estimate slope of $\beta_{year} = -0.0003161,$ a difference of $4.3776x10^{-6}.$ A 95% confidence interval for $\beta_{year}$ using `mblm` is (-0.0003698, -0.0002405), which does not contain 0. Therefore, similar to the permutation test results, we conclude that $\beta_{year} \neq 0.$   
 
 
-    ```{r p5,warning=F,message=F, echo=F}
+    ```{r p5,warning=F,message=F, echo=F, eval=F}
+# Results are loaded in the setup chunk
 library(mblm)
 
 model1s <- mblm(PropDays~Year,data=Data1,repeated=F)
@@ -163,7 +165,10 @@ for(i in 1:B){
   Tstar[i] <- mblm(PropDays ~ Year, data = z)$coef[2]
 }
 
+save(Tstar, Tobs, file="p5.Rdata")
+```
 
+```{r p5results, echo=F}
 qplot(Tstar, geom="histogram",  
       main = expression(paste("Histogram of Permuted ", beta[year])), 
       xlab = "Freq", fill = I("blue"), col = I("black"), 
@@ -373,6 +378,10 @@ legend("topright", legend = c("lm", "mblm", "zyp"),
 
 # Problem 5
 ```{r a5, ref.label="p5", eval=F}
+
+```
+
+```{r a5results, ref.label="p5results", eval=F}
 
 ```
 
