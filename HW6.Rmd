@@ -249,6 +249,7 @@ uncor.tI[,1] <- ifelse(uncor.tI[,1] < 0.001, "<0.001",
                                      sprintf("%.3f", uncor.tI[,1]))
 pander(uncor.tI)
 ```
+
 7) Instead of white noise errors, we might also be interested in Type I error rates when we have autocorrelation present (again with no trend in the true process). Use the results for an AR(1) process variance (derived in class) to calculate the white noise variance needed to generate a process with the same variance as you used for your previous simulation, but when $\phi = 0.3$ and 0.6. In other words, $\gamma_0$ of the AR(1) process needs to match the white noise variance used above and the white noise process driving the AR(1) process needs to be adjusted appropriately. 
 
   - Show your derivation of the required white noise variances first for $\phi = 0.3$ and $\phi = 0.6$.   
@@ -305,16 +306,18 @@ rownames(ERRORS) <- c("AR(1) correlation", "No correlation")
 pander(ERRORS)
 ```
 
+The presence of autocorrelation in the simulated data made drastic differences in the type I error rates of all the methods. The type I errors of the `mblm` function have become even more substatial with the presence of autocorrelation, going from 30\% to nearly 60\%. The expected error rates of the t-test for uncorrelated data, became quite large for data with autocorrelation present, going from 5\% to 31\%. Finally, the permutation method saw the smallest increase in type I error rates when correlation is present, going from  \textbf{rates here!}.   
+
 9) The Zhang method you read about is also available in the `zyp` package but it only provides confidence intervals and I am not completely convinced by their discussion of the intervals provided without more exploration. But you can get estimates from `zyp.sen` and confidence intervals using `confint.zyp` on the results from `zyp.sen`. The `confint` function can also be applied to `mblm` results. Find and compare the two confidence intervals for the Sen-estimators for the proportion response time series. No simulation study here - just complete the analysis.  
 
     ```{r p9, echo=F, message=F}
 library(mblm)
-library(zyp)
+library(zyp, quietly = T)
 model_zyp <- zyp.sen(PropDays ~ Year,data = Data1)
 zyp <- confint.zyp(model_zyp)
 mblm <- confint(model1s)
 
-CIs <- cbind(zyp[2,], mblm[2,])
+CIs <- rbind(zyp[2,], mblm[2,])
 row.names(CIs) <- c("zyp", "mblm")
 colnames(CIs) <- c("0.025", "0.975")
 
