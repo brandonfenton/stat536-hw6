@@ -202,15 +202,15 @@ mblm_function <- function(x){
 }
 
 permute_function <- function(x){
-  B <- 5000
+  B <- 500
   Tstar <- matrix(NA, nrow = B)
-  Tobs <- prop_lm$coefficients[2]
+  Tobs <- 0
     for(i in 1:B){
         Tstar[i] <- lm(x ~ shuffle(Data1$Year))$coef[2]
     } 
   p_value <- pdata(abs(Tstar), abs(Tobs), lower.tail = F)
   decision <- ifelse(p_value < 0.05, 1, 0)
-  return(decision)
+  return(c(decision, p_value))
 }
 
 sigma.est <- summary(prop_lm)$sigma
