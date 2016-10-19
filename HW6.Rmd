@@ -112,14 +112,13 @@ In the model fit, the estimated proportion of measured days below zero decreases
 
 With these data, the days, months and years were not randomly selected. These data comprise of all sampled days from 1900 to 2008, and therefore our scope of inference only applies to the years (and days, and months) sampled. The temperatures were not randomly assigned to the years (or months or days), hence we can only infer that later years are associated with lower proportions of sampled days below freezing, for these data.  
 
-3) Discuss this proportion response versus using the count of days below zero per year, specific to this example and in general. What issues does using one or the other present?   
-
-In either case, the model used should be appropriate for the response.  This would mean using either a Binomial regression model for proportion responses or a Poisson regression model for count responses.  Time series GLMs can be more difficult to implement -- particularly in the case of Poisson models -- but if a Normal model is fit then other issues arise.  For example, an OLS model could generate predicted proportions falling outside $[0,1]$, or predicted counts with fractional or negative values. 
+3) Discuss this proportion response versus using the count of days below zero per year, specific to this example and in general. What issues does using one or the other present? 
+    In either case, the model used should be appropriate for the response.  This would mean using either a binomial regression model for proportion responses or a poisson regression model for count responses.  Time series GLMs can be more difficult to implement -- particularly in the case of poisson models -- but if a normal model is fit then other issues arise.  For example, an OLS model could generate predicted proportions falling outside $[0,1]$, or predicted counts with fractional or negative values. 
 
 4) Generate a permutation test for the trend with the proportion response. I performed one in the syllabus (page 6) using the `shuffle` function from the `mosaic` package. Report a plot of the permutation distribution, the _test statistic_ you used, and a p-value. Generally randomization based tests are more robust to violations of the normality assumption as long as the distribution (shape and variability) is the same for all observations except for differences in the _center_ or mean. Why would that be advantageous with this response?
 
     ```{r p4, echo=F, warning=FALSE, message=FALSE}
-par(mfrow = c(1, 2))
+# par(mfrow = c(2, 1))
 library(mosaic)
 library(beanplot)
 B <- 1000
@@ -147,11 +146,12 @@ Above is a plot of 1000 permuted slopes of $\beta_{year},$ with the observed slo
 
 5) The Sen estimator or, more commonly, Theil-Sen is based on a single median of all the possible pairwise generated slopes. Its standard version is available in the `mblm` (median based linear models) R package developed by Lukasz Komsta. The package description provides more details (https://cran.r-project.org/web/packages/mblm/mblm.pdf). Note that with `mblm`, you need to use `repeated=FALSE` to get the Theil-Sen estimator and not the better estimator developed by Siegel. The package has a `summary` function that provides a test based on the nonparametric Wilcox test but it had terrible Type I error rates when I explored it. Without further explorations, I would recommend avoiding its use. Fortunately, our permutation approach can be used to develop a test based on the Theil-Sen slope coefficient. First, compare the estimated slope provided by `mblm` to what you found from the linear model and its permutation test. Then develop a permutation test based on the slope coefficient from `mblm` - note that `mblm` conveniently has the same output structure as `lm`. The confidence interval that runs on `mblm` seems to perform well enough to study, so we can make 95% confidence intervals and check whether 0 is in the interval or not as the following code suggests to use it to perform our 5% significance level hypothesis test.
 
-In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117,$ while with `mblm` we obtained an estimate slope of $\beta_{year} = -0.0003161,$ a difference of $4.3776\text{x}10^{-6}.$ A 95% confidence interval for $\beta_{year}$ using `mblm` is (-0.0003698, -0.0002405), which does not contain 0. Therefore, similar to the permutation test results, we conclude that $\beta_{year} \neq 0.$ The permuted $\beta_{year}$ `mblm` slopes are displayed below, with the observed `mblm` slope plotted in red. The resulting p-value from the permutation test is 0.005, very similar to the p-value observed in the `lm` permutation test. Overall, the `mblm` function does not lead us to different conclusions about $\beta_{year}$ than we obtained from `lm`. 
+In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117,$ while with `mblm` we obtained an estimate slope of $\beta_{year} = -0.0003161,$ a difference of $4.3776x10^{-6}.$ A 95% confidence interval for $\beta_{year}$ using `mblm` is (-0.0003698, -0.0002405), which does not contain 0. Therefore, similar to the permutation test results, we conclude that $\beta_{year} \neq 0.$   
 
 
     ```{r p5,warning=F,message=F, echo=F}
 library(mblm)
+
 model1s <- mblm(PropDays~Year,data=Data1,repeated=F)
 
 
@@ -210,11 +210,14 @@ permute_function <- function(x){
 
 sigma.est <- summary(prop_lm)$sigma
 
+
 ```
 
     ```{r p6, echo = F, cache = TRUE, eval=F}
 # Results are loaded in the setup chunk
 sim_data <- replicate(250, replicate(109, rnorm(1, 0, sigma.est)))
+
+
 
 
 t_type_1 <- apply(sim_data, 2, t_function)
@@ -231,11 +234,21 @@ mblm_type_1 <- apply(sim_data, 2, mblm_function)
 
 permute_type_1 <- apply(sim_data, 2, permute_function)
 
-#sum(permute_type_1) = Type 1 error rate
-
+#sum(permute_type_1) = Type 1 error rate  
 save(sim_data, t_type_1, mblm_type_1, permute_type_1, file="p6.Rdata")
 ```
 
+```{r p6a, echo=F}
+
+uncor.tI <- data.frame(rbind(mean(t_type_1), mean(mblm_type_1), mean(permute_type_1)))
+
+rownames(uncor.tI) <- c("t-test", "mblm", "permutation")
+colnames(uncor.tI) <- "Type I Error"
+
+uncor.tI[,1] <- ifelse(uncor.tI[,1] < 0.001, "<0.001",
+                                     sprintf("%.3f", uncor.tI[,1]))
+pander(uncor.tI)
+```
 7) Instead of white noise errors, we might also be interested in Type I error rates when we have autocorrelation present (again with no trend in the true process). Use the results for an AR(1) process variance (derived in class) to calculate the white noise variance needed to generate a process with the same variance as you used for your previous simulation, but when $\phi = 0.3$ and 0.6. In other words, $\gamma_0$ of the AR(1) process needs to match the white noise variance used above and the white noise process driving the AR(1) process needs to be adjusted appropriately. 
 
   - Show your derivation of the required white noise variances first for $\phi = 0.3$ and $\phi = 0.6$.   
