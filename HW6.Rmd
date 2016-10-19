@@ -349,6 +349,10 @@ legend("topright", legend = c("lm", "mblm", "zyp"),
 
 ```
 
+```{r a6a, ref.label="p6a", eval=F}
+
+```
+
 # Problem 7
 ```{r a7, ref.label="p7", eval=F}
 
