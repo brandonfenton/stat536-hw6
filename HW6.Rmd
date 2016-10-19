@@ -213,9 +213,9 @@ permute_function <- function(x){
     } 
   p_value <- pdata(abs(Tstar), abs(Tobs), lower.tail = F)
   print(p_value)
-  # Just returning the p-value right now for diagnostic purposes
-  # decision <- ifelse(p_value < 0.05, 1, 0)
-  return(p_value)
+
+  decision <- ifelse(p_value < 0.05, 1, 0)
+  return(decision)
 }
 
 sigma.est <- summary(prop_lm)$sigma
@@ -304,6 +304,8 @@ permute_ar_type_1 <- parApply(clust, ar_sim_data, 2, permute_function)
 
 save(ar_sim_data, t_ar_type_1, mblm_ar_type_1, permute_ar_type_1, file="p8.Rdata")
 
+```
+```{r p8a, echo=F}
 ar1.errors <- c(sum(t_ar_type_1)/250, sum(mblm_ar_type_1)/250,
                 sum(permute_ar_type_1)/250)
 
