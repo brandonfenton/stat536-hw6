@@ -279,7 +279,7 @@ ar1.06.error
 ar1sim <- arima.sim(n = 2000, model = list(ar = c(0.6)), 
                     sd = sqrt(ar1.06.error))
 var(ar1sim)
-sigma.est
+sigma.est^2
 
 ```
 
