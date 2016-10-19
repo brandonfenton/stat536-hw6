@@ -207,11 +207,7 @@ mblm_function <- function(x){
 permute_function <- function(x){
   B <- 500
   Tstar <- matrix(NA, nrow = B)
-<<<<<<< HEAD
   Tobs <- lm(x~Data1$Year)$coefficients[2]
-=======
-  Tobs <- 0
->>>>>>> e9252b10d786eca31c95934c6351723d1e222cbb
     for(i in 1:B){
         Tstar[i] <- lm(x ~ shuffle(Data1$Year))$coef[2]
     } 
