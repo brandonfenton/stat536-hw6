@@ -214,7 +214,7 @@ permute_function <- function(x){
   p_value <- pdata(abs(Tstar), abs(Tobs), lower.tail = F)
 
   decision <- ifelse(p_value < 0.05, 1, 0)
-  return(c(decision, p_value))
+  return(decision)
 }
 
 sigma.est <- summary(prop_lm)$sigma
