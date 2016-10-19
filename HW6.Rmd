@@ -248,17 +248,19 @@ permute_type_1 <- parApply(clust, sim_data, 2, permute_function)
 save(sim_data, t_type_1, mblm_type_1, permute_type_1, file="p6.Rdata")
 ```
 
-```{r p6a, echo=F}
+    ```{r p6a, echo=F}
 
 uncor.tI <- data.frame(rbind(mean(t_type_1), mean(mblm_type_1), mean(permute_type_1)))
 
 rownames(uncor.tI) <- c("t-test", "mblm", "permutation")
-colnames(uncor.tI) <- "Type I Error"
+colnames(uncor.tI) <- "Type I Error ($\\alpha=.05$)"
 
 uncor.tI[,1] <- ifelse(uncor.tI[,1] < 0.001, "<0.001",
                                      sprintf("%.3f", uncor.tI[,1]))
 pander(uncor.tI)
 ```
+    
+    The type I error rate was lowest for `mblm`, followed closely by the parametric t-test.  The permutation test had a Type I error rate more than twice that for either of the other tests.  Although this value is perhaps unacceptably large if a type I error rate of $0.05$ is desired, it is very small in comparison to the rates found using simulated AR(1) data in part 8.
 
 7) Instead of white noise errors, we might also be interested in Type I error rates when we have autocorrelation present (again with no trend in the true process). Use the results for an AR(1) process variance (derived in class) to calculate the white noise variance needed to generate a process with the same variance as you used for your previous simulation, but when $\phi = 0.3$ and 0.6. In other words, $\gamma_0$ of the AR(1) process needs to match the white noise variance used above and the white noise process driving the AR(1) process needs to be adjusted appropriately. 
 
@@ -305,7 +307,7 @@ permute_ar_type_1 <- parApply(clust, ar_sim_data, 2, permute_function)
 save(ar_sim_data, t_ar_type_1, mblm_ar_type_1, permute_ar_type_1, file="p8.Rdata")
 
 ```
-```{r p8a, echo=F}
+    ```{r p8a, echo=F}
 ar1.errors <- c(sum(t_ar_type_1)/250, sum(mblm_ar_type_1)/250,
                 sum(permute_ar_type_1)/250)
 
@@ -336,6 +338,7 @@ colnames(CIs) <- c("0.025", "0.975")
 pander(CIs)
 ```
 
+The confidence interval resulting from `zyp.sen` is wider than that from `mblm`, but both contain similar ranges of values. 
 
 10) Make a plot of the original proportion response time series with the parametric linear, Theil-Sen, and Zhang methods/models on the same plot. You may want to use `plot(y~x,type="l")` and then add lines to the plot.
 
