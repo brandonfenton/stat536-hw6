@@ -151,7 +151,27 @@ In the linear model we obtained an estimated slope of $\beta_{year} = -0.0003117
 
     ```{r p5,warning=F,message=F, echo=F}
 library(mblm)
-model1s<-mblm(PropDays~Year,data=Data1,repeated=F)
+
+model1s <- mblm(PropDays~Year,data=Data1,repeated=F)
+
+
+B <- 1000
+Tstar <- matrix(NA, nrow = B)
+Tobs <- model1s$coefficients[2]
+for(i in 1:B){
+  z <- data.frame(Year = shuffle(Data1$Year), PropDays = Data1$PropDays)
+  Tstar[i] <- mblm(PropDays ~ Year, data = z)$coef[2]
+}
+
+
+qplot(Tstar, geom="histogram",  
+      main = expression(paste("Histogram of Permuted ", beta[year])), 
+      xlab = "Freq", fill = I("blue"), col = I("black"), 
+      alpha=I(.2)) + geom_vline(xintercept = Tobs, colour = "red")
+
+p_value <- pdata(abs(Tstar), abs(Tobs), lower.tail = F)
+
+
 #summary(model1s)
 #confint(model1s)
 
@@ -183,7 +203,7 @@ permute_function <- function(x){
     for(i in 1:B){
         Tstar[i] <- lm(x ~ shuffle(Data1$Year))$coef[2]
     } 
-  p_value <- pdata(abs(Tstar), 0, lower.tail = F)
+  p_value <- pdata(abs(Tstar), abs(Tobs), lower.tail = F)
   decision <- ifelse(p_value < 0.05, 1, 0)
   return(decision)
 }
@@ -252,6 +272,8 @@ sigma.est
 
 ```
 
+We see when using the AR(1) error term calculated above, the variance of the simulated data is very close to the $\sigma_e$ that we used to generate it. 
+
 8) Repeat your simulation study of the parametric, permutation, and Theil-Sen linear trend test based on the CI. Report the estimated Type I error rates in the presence of AR(1) correlations with a parameter of 0.6 based on your work in the previous question for simulating the response time series. Discuss the impacts of having autocorrelation present on the various procedures.
 
     ```{r p8, echo=F, cache=TRUE, eval=F}
@@ -261,14 +283,25 @@ ar_sim_data <- replicate(250, arima.sim(n = 109, model = list( ar = c(0.6)),
 
 
 t_ar_type_1 <- apply(ar_sim_data, 2, t_function)
-#sum(t_ar_type_1) = 74/250 = 0.296 Type 1 error rate
+#sum(t_ar_type_1) = 7/250 = 0.308 Type 1 error rate
 
 mblm_ar_type_1 <- apply(ar_sim_data, 2, mblm_function)
-# sum(mblm_ar_type_1) = 
+# sum(mblm_ar_type_1) = 145/250 = 0.58
 
 permute_ar_type_1 <- apply(ar_sim_data, 2, permute_function)
 # sum(permute_ar_type_1) = Type 1 error rate  
+
 save(ar_sim_data, t_ar_type_1, mblm_ar_type_1, permute_ar_type_1, file="p8.Rdata")
+
+ar1.errors <- c(sum(t_ar_type_1)/250, sum(mblm_ar_type_1)/250,
+                sum(permute_ar_type_1)/250)
+
+errors <- c(sum(t_type_1)/250, sum(mblm_type_1)/250,
+                sum(permute_type_1)/250)
+
+ERRORS <- rbind(ar1.errors, errors)
+colnames(ERRORS) <- c("t-test", "mblm", "permutation")
+rownames(ERRORS) <- c("AR(1) correlation", "No correlation")
 ```
 
 9) The Zhang method you read about is also available in the `zyp` package but it only provides confidence intervals and I am not completely convinced by their discussion of the intervals provided without more exploration. But you can get estimates from `zyp.sen` and confidence intervals using `confint.zyp` on the results from `zyp.sen`. The `confint` function can also be applied to `mblm` results. Find and compare the two confidence intervals for the Sen-estimators for the proportion response time series. No simulation study here - just complete the analysis.  
